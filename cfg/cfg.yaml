@@ -1,0 +1,65 @@
+# ----------------------------------------- 
+# Global Configuration File
+# -----------------------------------------
+
+video: {
+  full_screen: True,
+  title: 'Video',
+  background_color: [0.0,0.0,0.0], # RGB
+  width: 1200, # Pixels
+  height: 1920, # Pixels
+}
+rendering: {
+  z_near: 0.05, # Meters
+  z_far: 50, # Meters
+  vfov: 60, # Degrees
+}
+viz: {
+  viz_modes: ['HEAT_MAPZ','HEAT_MAPY','FINAL_GND','TEXTURED','ORIGINAL'],
+}
+camera: {
+  zoom_factor: 1.02, # Defines how fast the zoom is applie
+  velocities: [0.001, 0.003, 0.004, 0.005, 0.010],
+  invert_top: True,
+  mouse_size: 350,
+}
+hotkeys: {
+  exit: 27,
+  mov_left: 'a',
+  mov_right: 'd',
+  mov_back: 's',
+  mov_forth: 'w',
+  mov_down: 'q',
+  mov_up: 'e',
+  zoom_in: 'f',
+  zoom_out: 'v',
+  inc_point: 'g',
+  dec_point: 'b',
+  render_p: 't',
+  render_m: 'r',
+  reset_view_pos: 'z',
+  plot_axis: 'x',
+  walk_speed: 'c',
+  rotate_box_cw: 'y',
+  rotate_box_ccw: 'h',
+}
+view: {
+  ctr_v_state: 2,
+  plot_axis: 1,
+  point_size: 2,
+  selector_angle: 0,
+  viz_mode: 0,
+}  
+cam: {
+  theta: 90.0,
+  phi: 90.0,
+  ctr_v: 1.0,
+  cam_x: 0.0,
+  cam_y: 0.0,
+  cam_z: 0.0,
+  ctr_x: 0.0,
+  ctr_y: 0.0,
+  ctr_z: 0.0,
+  radius: 1.0,
+  upwards: 0.0,
+}  
