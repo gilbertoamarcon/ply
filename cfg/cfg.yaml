@@ -5,7 +5,7 @@
 video: {
   full_screen: True,
   title: 'Video',
-  background_color: [0.0,0.0,0.0], # RGB
+  background_color: [0.2,0.2,0.2], # RGB
   width: 1200, # Pixels
   height: 1920, # Pixels
 }
@@ -15,45 +15,42 @@ rendering: {
   vfov: 60, # Degrees
 }
 viz: {
-  viz_modes: ['HEAT_MAPZ','HEAT_MAPY','FINAL_GND','TEXTURED','ORIGINAL'],
+  viz_modes: ['ORIGINAL','HEAT_MAPZ','HEAT_MAPY'],
 }
 camera: {
-  zoom_factor: 1.02, # Defines how fast the zoom is applie
-  velocities: [0.001, 0.003, 0.004, 0.005, 0.010],
+  zoom_factor_key: 1.02,    # Defines how fast the zoom is applie by key press
+  zoom_factor_mouse: 1.10,  # Defines how fast the zoom is applie by the mouse wheel
   invert_top: True,
   mouse_size: 350,
+  cam_v_boost: 5, # Fast camera velocity multiplier factor
 }
 hotkeys: {
   exit: 27,
-  mov_left: 'a',
-  mov_right: 'd',
-  mov_back: 's',
-  mov_forth: 'w',
-  mov_down: 'q',
-  mov_up: 'e',
-  zoom_in: 'f',
-  zoom_out: 'v',
-  inc_point: 'g',
-  dec_point: 'b',
-  render_p: 't',
-  render_m: 'r',
-  reset_view_pos: 'z',
-  plot_axis: 'x',
-  walk_speed: 'c',
-  rotate_box_cw: 'y',
-  rotate_box_ccw: 'h',
+  mov_left: ['a','A'],
+  mov_right: ['d','D'],
+  mov_back: ['s','S'],
+  mov_forth: ['w','W'],
+  mov_down: ['q','Q'],
+  mov_up: ['e','E'],
+  zoom_in: ['f','F'],
+  zoom_out: ['v','V'],
+  inc_point: ['g','G'],
+  dec_point: ['b','B'],
+  render_p: ['t','T'],
+  render_m: ['r','R'],
+  reset_view_pos: ['z','Z'],
+  plot_axis: ['x','X'],
+  fast_cam: 1,
 }
 view: {
-  ctr_v_state: 2,
   plot_axis: 1,
   point_size: 2,
-  selector_angle: 0,
   viz_mode: 0,
 }  
 cam: {
   theta: 90.0,
   phi: 90.0,
-  ctr_v: 1.0,
+  cam_v: 0.005,
   cam_x: 0.0,
   cam_y: 0.0,
   cam_z: 0.0,
@@ -62,4 +59,4 @@ cam: {
   ctr_z: 0.0,
   radius: 1.0,
   upwards: 0.0,
-}  
+}

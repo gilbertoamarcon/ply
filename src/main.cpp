@@ -1,5 +1,6 @@
 #include "pointCloud.hpp"
 #define CFG_PATH "cfg/cfg.yaml"
+#include <algorithm>
 
 using namespace std;
 
@@ -19,6 +20,10 @@ void update(int n);
 void renderScene();
 
 void iniGl();
+
+void keyModifiers(unsigned char k, int mod);
+
+bool checkKey(unsigned char k, char* key);
 
 void keyPressed(unsigned char k, int x, int y);
 
@@ -76,28 +81,27 @@ void renderScene(){
 			cam["ctr_z"],0,0,int(cam["upwards"]));
 
 		// Points
-		float r = 0;
-		float g = 0;
-		float b = 0;
+		float r = 0.5;
+		float g = 0.5;
+		float b = 0.5;
 		glPointSize(view["point_size"]);
 		glBegin(GL_POINTS);
 		for (int i = 0; i < pc.num_points; i++){
-			int viz_mode = view["viz_mode"];
-			if(cfg["viz"]["viz_modes"][viz_mode].as<string>().compare("HEAT_MAPZ")){
+			if(cfg["viz"]["viz_modes"][view["viz_mode"]].as<string>().compare("ORIGINAL") == 0){
+				r = pc.point[i].r/255;
+				g = pc.point[i].g/255;
+				b = pc.point[i].b/255;
+			}
+			if(cfg["viz"]["viz_modes"][view["viz_mode"]].as<string>().compare("HEAT_MAPZ") == 0)
 				heatMap((pc.point[i].z-pc.minZ)/(pc.maxZ-pc.minZ),&r,&g,&b);
-				glColor3f(r,g,b);
-			}else if(cfg["viz"]["viz_modes"][viz_mode].as<string>().compare("HEAT_MAPY")){
+			if(cfg["viz"]["viz_modes"][view["viz_mode"]].as<string>().compare("HEAT_MAPY") == 0)
 				heatMap((pc.point[i].y-pc.minY)/(pc.maxY-pc.minY),&r,&g,&b);
-				glColor3f(r,g,b);
-			}else if(cfg["viz"]["viz_modes"][viz_mode].as<string>().compare("FINAL_GND")){
-				glColor3f(0.00,0.00,1.00);
-			}else if(cfg["viz"]["viz_modes"][viz_mode].as<string>().compare("TEXTURED")){
-				glColor3f(0.00,0.00,pc.point[i].r);
-			}else if(cfg["viz"]["viz_modes"][viz_mode].as<string>().compare("ORIGINAL")){
-				glColor3f(pc.point[i].r,pc.point[i].g,pc.point[i].b);
-			}else
-				glColor3f(0.50,0.50,0.50);
-			glVertex3f(pc.point[i].x,pc.point[i].y,pc.point[i].z);
+			glColor3f(r,g,b);
+			glVertex3f(
+				pc.point[i].x,
+				pc.point[i].y,
+				pc.point[i].z
+			);
 		}
 		glEnd();
 		
@@ -171,13 +175,13 @@ void mouseMove(int x, int y){
 
 void mouseClick(int button, int state, int x, int y){
 	if(button == 0)
-		cam["radius"] /= cfg["camera"]["zoom_factor"].as<float>();
+		cam["radius"] /= cfg["camera"]["zoom_factor_mouse"].as<float>();
 	if(button == 2)
-		cam["radius"] *= cfg["camera"]["zoom_factor"].as<float>();
+		cam["radius"] *= cfg["camera"]["zoom_factor_mouse"].as<float>();
 	if(button == 3)
-		cam["radius"] /= cfg["camera"]["zoom_factor"].as<float>();
+		cam["radius"] /= cfg["camera"]["zoom_factor_mouse"].as<float>();
 	if(button == 4)
-		cam["radius"] *= cfg["camera"]["zoom_factor"].as<float>();
+		cam["radius"] *= cfg["camera"]["zoom_factor_mouse"].as<float>();
 }
 
 void plotScale(){
@@ -268,108 +272,111 @@ void heatMap(float input,float* r,float* g,float* b){
 void update(int n){
 	glutTimerFunc(1,update,0);
 	if(key["zoom_in"])
-		cam["radius"] /= cfg["camera"]["zoom_factor"].as<float>();
+		cam["radius"] /= cfg["camera"]["zoom_factor_key"].as<float>();
 	if(key["zoom_out"])
-		cam["radius"] *= cfg["camera"]["zoom_factor"].as<float>();
+		cam["radius"] *= cfg["camera"]["zoom_factor_key"].as<float>();
 	cam["cam_x"]	= cam["radius"]*sin(M_PI*cam["theta"]/180.0)*sin(M_PI*cam["phi"]/180.0);
 	cam["cam_y"]	= cam["radius"]*cos(M_PI*cam["theta"]/180.0)*sin(M_PI*cam["phi"]/180.0);
 	cam["cam_z"]	= cam["radius"]*cos(M_PI*cam["phi"]/180.0);
 	cam["upwards"]	= 2*(cam["phi"]>180)-1;
+	float cam_vel = (key["fast_cam"]*(cfg["camera"]["cam_v_boost"].as<float>()-1)+1)*cam["radius"]*cam["cam_v"];
 	if(key["mov_left"]){
-		cam["ctr_x"] -= cam["ctr_v"]*cos(M_PI*cam["theta"]/180.0);
-		cam["ctr_y"] += cam["ctr_v"]*sin(M_PI*cam["theta"]/180.0);
+		cam["ctr_x"] -= cam_vel*cos(M_PI*cam["theta"]/180.0);
+		cam["ctr_y"] += cam_vel*sin(M_PI*cam["theta"]/180.0);
 	}
 	if(key["mov_right"]){
-		cam["ctr_x"] += cam["ctr_v"]*cos(M_PI*cam["theta"]/180.0);
-		cam["ctr_y"] -= cam["ctr_v"]*sin(M_PI*cam["theta"]/180.0);
+		cam["ctr_x"] += cam_vel*cos(M_PI*cam["theta"]/180.0);
+		cam["ctr_y"] -= cam_vel*sin(M_PI*cam["theta"]/180.0);
 	}
 	if(key["mov_back"]){
-		cam["ctr_x"] -= cam["ctr_v"]*sin(M_PI*cam["theta"]/180.0);
-		cam["ctr_y"] -= cam["ctr_v"]*cos(M_PI*cam["theta"]/180.0);
+		cam["ctr_x"] -= cam_vel*sin(M_PI*cam["theta"]/180.0);
+		cam["ctr_y"] -= cam_vel*cos(M_PI*cam["theta"]/180.0);
 	}
 	if(key["mov_forth"]){
-		cam["ctr_x"] += cam["ctr_v"]*sin(M_PI*cam["theta"]/180.0);
-		cam["ctr_y"] += cam["ctr_v"]*cos(M_PI*cam["theta"]/180.0);
+		cam["ctr_x"] += cam_vel*sin(M_PI*cam["theta"]/180.0);
+		cam["ctr_y"] += cam_vel*cos(M_PI*cam["theta"]/180.0);
 	}
 	if(key["mov_up"])
-		cam["ctr_z"] -= cam["ctr_v"];
+		cam["ctr_z"] -= cam_vel;
 	if(key["mov_down"])
-		cam["ctr_z"] += cam["ctr_v"];
-	if(view["ctr_v_state"] < cfg["camera"]["velocities"].size())
-		cam["ctr_v"] = cfg["camera"]["velocities"][view["ctr_v_state"]].as<float>();
+		cam["ctr_z"] += cam_vel;
 }
 
+void keyModifiers(unsigned char k, int mod){
+	if(mod == cfg["hotkeys"]["fast_cam"].as<int>())
+		key["fast_cam"] = true;
+	else
+		key["fast_cam"] = false;
+}
+
+bool checkKey(unsigned char k, char* key){
+	std::vector<char> vi = cfg["hotkeys"][key].as<std::vector<char>>();
+	return std::find(vi.begin(),vi.end(),k) != vi.end();
+}
  
 void keyPressed(unsigned char k, int x, int y){
 	if(k == cfg["hotkeys"]["exit"].as<int>())
 		exit(0);
-	else if(k == cfg["hotkeys"]["walk_speed"].as<char>()){
-		view["ctr_v_state"]++;
-		if(view["ctr_v_state"] > cfg["camera"]["velocities"].size())
-			view["ctr_v_state"] = 0;
-	}
-	else if(k == cfg["hotkeys"]["plot_axis"].as<char>())
+	else if(checkKey(k,"plot_axis"))
 		view["plot_axis"] = !view["plot_axis"];
-	else if(k == cfg["hotkeys"]["reset_view_pos"].as<char>()){
+	else if(checkKey(k,"reset_view_pos")){
 		cam["ctr_x"] = pc.ctroid.x;
 		cam["ctr_y"] = pc.ctroid.y;
 		cam["ctr_z"] = pc.ctroid.z;
 	}
-	else if(k == cfg["hotkeys"]["render_p"].as<char>()){
+	else if(checkKey(k,"render_p")){
 		view["viz_mode"]++;
 		if(view["viz_mode"] >= cfg["viz"]["viz_modes"].size())
-			view["viz_mode"] = 0;
-	}
-	else if(k == cfg["hotkeys"]["render_m"].as<char>()){
-		view["viz_mode"]--;
-		if(view["viz_mode"] < 0)
 			view["viz_mode"] = cfg["viz"]["viz_modes"].size()-1;
 	}
-	else if(k == cfg["hotkeys"]["inc_point"].as<char>())
+	else if(checkKey(k,"render_m")){
+		view["viz_mode"]--;
+		if(view["viz_mode"] < 0)
+			view["viz_mode"] = 0;
+	}
+	else if(checkKey(k,"inc_point"))
 		view["point_size"]++;
-	else if(k == cfg["hotkeys"]["dec_point"].as<char>()){
+	else if(checkKey(k,"dec_point")){
 		view["point_size"]--;
 		if(view["point_size"] < 1)
 			view["point_size"] = 1;
 	}
-	else if(k == cfg["hotkeys"]["rotate_box_cw"].as<char>())
-		view["selector_angle"] += cam["ctr_v"]*1e3;
-	else if(k == cfg["hotkeys"]["rotate_box_ccw"].as<char>())
-		view["selector_angle"] -= cam["ctr_v"]*1e3;
-	else if(k == cfg["hotkeys"]["zoom_in"].as<char>())
+	else if(checkKey(k,"zoom_in"))
 		key["zoom_in"] = true;
-	else if(k == cfg["hotkeys"]["zoom_out"].as<char>())
+	else if(checkKey(k,"zoom_out"))
 		key["zoom_out"] = true;
-	else if(k == cfg["hotkeys"]["mov_left"].as<char>())
+	else if(checkKey(k,"mov_left"))
 		key["mov_left"] = true;
-	else if(k == cfg["hotkeys"]["mov_right"].as<char>())
+	else if(checkKey(k,"mov_right"))
 		key["mov_right"] = true;
-	else if(k == cfg["hotkeys"]["mov_back"].as<char>())
+	else if(checkKey(k,"mov_back"))
 		key["mov_back"] = true;
-	else if(k == cfg["hotkeys"]["mov_forth"].as<char>())
+	else if(checkKey(k,"mov_forth"))
 		key["mov_forth"] = true;
-	else if(k == cfg["hotkeys"]["mov_down"].as<char>())
+	else if(checkKey(k,"mov_down"))
 		key["mov_down"] = true;
-	else if(k == cfg["hotkeys"]["mov_up"].as<char>())
+	else if(checkKey(k,"mov_up"))
 		key["mov_up"] = true;
+	keyModifiers(k,glutGetModifiers());
 }
 
 void keyReleased(unsigned char k, int x, int y){
-	if(k == cfg["hotkeys"]["zoom_in"].as<char>())
+	if(checkKey(k,"zoom_in"))
 		key["zoom_in"] = false;
-	else if(k == cfg["hotkeys"]["zoom_out"].as<char>())
+	else if(checkKey(k,"zoom_out"))
 		key["zoom_out"] = false;
-	else if(k == cfg["hotkeys"]["mov_left"].as<char>())
+	else if(checkKey(k,"mov_left"))
 		key["mov_left"] = false;
-	else if(k == cfg["hotkeys"]["mov_right"].as<char>())
+	else if(checkKey(k,"mov_right"))
 		key["mov_right"] = false;
-	else if(k == cfg["hotkeys"]["mov_back"].as<char>())
+	else if(checkKey(k,"mov_back"))
 		key["mov_back"] = false;
-	else if(k == cfg["hotkeys"]["mov_forth"].as<char>())
+	if(checkKey(k,"mov_forth"))
 		key["mov_forth"] = false;
-	else if(k == cfg["hotkeys"]["mov_down"].as<char>())
+	else if(checkKey(k,"mov_down"))
 		key["mov_down"] = false;
-	else if(k == cfg["hotkeys"]["mov_up"].as<char>())
+	else if(checkKey(k,"mov_up"))
 		key["mov_up"] = false;
+	keyModifiers(k,glutGetModifiers());
 }
 
