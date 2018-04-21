@@ -2,6 +2,7 @@
 #define __POINTCLOUD_HPP__
 #include "csv.h"
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <map>
 #include <yaml-cpp/yaml.h>
@@ -37,7 +38,9 @@ class PointCloud{
 		PointCloud();
 		int file_size();
 		int load();
+		void write();
 		void compute_stats();
+		void rotate(float t, float p);
 };
 
 #endif

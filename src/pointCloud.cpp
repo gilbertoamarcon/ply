@@ -52,6 +52,21 @@ int PointCloud::load(){
 	return 0;
 }
 
+void PointCloud::write(){
+
+	cfg = YAML::LoadFile(CLOUD_CFG_PATH);
+
+	cout << "Storing file '" << cfg["cloud_filename"].as<string>() << "'" << endl;
+
+	ofstream file;
+	file.open(cfg["cloud_filename"].as<string>());
+	file << "x,y,z,r,g,b" << endl;
+	for(int i = 0; i < num_points; i++)
+		file << point[i].x << "," << point[i].y << "," << point[i].z << "," << point[i].r << "," << point[i].g << "," << point[i].b << endl;
+	file.close();
+	cout << num_points << " points stored." << endl;
+}
+
 void PointCloud::compute_stats(){
 	ctroid.x = 0;
 	ctroid.y = 0;
@@ -79,5 +94,20 @@ void PointCloud::compute_stats(){
 	ctroid.x /= num_points;
 	ctroid.y /= num_points;
 	ctroid.z /= num_points;
+}
+
+void PointCloud::rotate(float t, float p){
+	float x = 0.0;
+	float y = 0.0;
+	float z = 0.0;
+	for (int i = 0; i < num_points; i++){
+		x = point[i].x;
+		y = point[i].y;
+		z = point[i].z;
+		point[i].x = x*cos(p) + z*sin(p);
+		point[i].y = x*sin(t)*sin(p) + y*cos(t) -z*sin(t)*cos(p);
+		point[i].z = -x*sin(p)*cos(t) + y*sin(t) + z*cos(t)*cos(p);
+	}
+	compute_stats();
 }
 

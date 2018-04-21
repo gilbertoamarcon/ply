@@ -14,14 +14,13 @@ rendering: {
   z_far: 50, # Meters
   vfov: 60, # Degrees
 }
-viz: {
-  viz_modes: ['ORIGINAL','HEAT_MAPZ','HEAT_MAPY'],
-}
 camera: {
   zoom_factor_key: 1.02,    # Defines how fast the zoom is applie by key press
   zoom_factor_mouse: 1.10,  # Defines how fast the zoom is applie by the mouse wheel
   invert_top: True,
   mouse_size: 350,
+  rotate_angle: 5,
+  store_cloud: False,
   cam_v_boost: 5, # Fast camera velocity multiplier factor
 }
 hotkeys: {
@@ -40,7 +39,10 @@ hotkeys: {
   render_m: ['r','R'],
   reset_view_pos: ['z','Z'],
   plot_axis: ['x','X'],
+  center_view: ['c','C'],
   fast_cam: 1,
+  rotate_x: 2,
+  rotate_y: 4,
 }
 view: {
   plot_axis: 1,

@@ -7,6 +7,8 @@ using namespace std;
 PointCloud pc;
 YAML::Node cfg;
 
+int mod;
+
 std::map<string,bool> key;
 std::map<string,int> view;
 std::map<string,float> cam;
@@ -20,8 +22,6 @@ void update(int n);
 void renderScene();
 
 void iniGl();
-
-void keyModifiers(unsigned char k, int mod);
 
 bool checkKey(unsigned char k, char* key);
 
@@ -39,6 +39,8 @@ void heatMap(float input,float* r,float* g,float* b);
 
 
 int main(int argc, char **argv){
+
+	mod = 0;
 
 	// Loading system configuration file
 	cfg = YAML::LoadFile(CFG_PATH);
@@ -86,23 +88,63 @@ void renderScene(){
 		float b = 0.5;
 		glPointSize(view["point_size"]);
 		glBegin(GL_POINTS);
-		for (int i = 0; i < pc.num_points; i++){
-			if(cfg["viz"]["viz_modes"][view["viz_mode"]].as<string>().compare("ORIGINAL") == 0){
-				r = pc.point[i].r/255;
-				g = pc.point[i].g/255;
-				b = pc.point[i].b/255;
+
+			// ORIGINAL
+			if(view["viz_mode"] == 0){
+				for (int i = 0; i < pc.num_points; i++){
+					r = pc.point[i].r/255;
+					g = pc.point[i].g/255;
+					b = pc.point[i].b/255;
+					glColor3f(r,g,b);
+					glVertex3f(
+						pc.point[i].x,
+						pc.point[i].y,
+						pc.point[i].z
+					);
+				}
 			}
-			if(cfg["viz"]["viz_modes"][view["viz_mode"]].as<string>().compare("HEAT_MAPZ") == 0)
-				heatMap((pc.point[i].z-pc.minZ)/(pc.maxZ-pc.minZ),&r,&g,&b);
-			if(cfg["viz"]["viz_modes"][view["viz_mode"]].as<string>().compare("HEAT_MAPY") == 0)
-				heatMap((pc.point[i].y-pc.minY)/(pc.maxY-pc.minY),&r,&g,&b);
-			glColor3f(r,g,b);
-			glVertex3f(
-				pc.point[i].x,
-				pc.point[i].y,
-				pc.point[i].z
-			);
-		}
+
+			// WHITE
+			if(view["viz_mode"] == 1){
+				r = 1.0;
+				g = 1.0;
+				b = 1.0;
+				for (int i = 0; i < pc.num_points; i++){
+					glColor3f(r,g,b);
+					glVertex3f(
+						pc.point[i].x,
+						pc.point[i].y,
+						pc.point[i].z
+					);
+				}
+			}
+
+			// HEAT_MAPZ
+			if(view["viz_mode"] == 2){
+				for (int i = 0; i < pc.num_points; i++){
+					heatMap((pc.point[i].z-pc.minZ)/(pc.maxZ-pc.minZ),&r,&g,&b);
+					glColor3f(r,g,b);
+					glVertex3f(
+						pc.point[i].x,
+						pc.point[i].y,
+						pc.point[i].z
+					);
+				}
+			}
+
+			// HEAT_MAPY
+			if(view["viz_mode"] == 3){
+				for (int i = 0; i < pc.num_points; i++){
+					heatMap((pc.point[i].y-pc.minY)/(pc.maxY-pc.minY),&r,&g,&b);
+					glColor3f(r,g,b);
+					glVertex3f(
+						pc.point[i].x,
+						pc.point[i].y,
+						pc.point[i].z
+					);
+				}
+			}
+
 		glEnd();
 		
 		// Axis
@@ -174,14 +216,29 @@ void mouseMove(int x, int y){
 }
 
 void mouseClick(int button, int state, int x, int y){
+	mod = glutGetModifiers();
 	if(button == 0)
 		cam["radius"] /= cfg["camera"]["zoom_factor_mouse"].as<float>();
 	if(button == 2)
 		cam["radius"] *= cfg["camera"]["zoom_factor_mouse"].as<float>();
-	if(button == 3)
-		cam["radius"] /= cfg["camera"]["zoom_factor_mouse"].as<float>();
-	if(button == 4)
-		cam["radius"] *= cfg["camera"]["zoom_factor_mouse"].as<float>();
+	if(mod == 0){
+		if(button == 3)
+			cam["radius"] /= cfg["camera"]["zoom_factor_mouse"].as<float>();
+		if(button == 4)
+			cam["radius"] *= cfg["camera"]["zoom_factor_mouse"].as<float>();
+	}
+	if(mod == cfg["hotkeys"]["rotate_x"].as<int>()){
+		if(button == 3)
+			pc.rotate( cfg["camera"]["rotate_angle"].as<float>()*M_PI/180.0, 0.0);
+		if(button == 4)
+			pc.rotate(-cfg["camera"]["rotate_angle"].as<float>()*M_PI/180.0, 0.0);
+	}
+	if(mod == cfg["hotkeys"]["rotate_y"].as<int>()){
+		if(button == 3)
+			pc.rotate(0.0, cfg["camera"]["rotate_angle"].as<float>()*M_PI/180.0);
+		if(button == 4)
+			pc.rotate(0.0,-cfg["camera"]["rotate_angle"].as<float>()*M_PI/180.0);
+	}
 }
 
 void plotScale(){
@@ -257,7 +314,7 @@ void heatMap(float input,float* r,float* g,float* b){
 	}else if(input < 0.50){
 		*r = 0;
 		*g = 1;
-		*b = 1.0-4*(input-0.25);		
+		*b = 1.0-4*(input-0.25);
 	}else if(input < 0.75){
 		*r = 4*(input-0.50);
 		*g = 1;
@@ -279,7 +336,7 @@ void update(int n){
 	cam["cam_y"]	= cam["radius"]*cos(M_PI*cam["theta"]/180.0)*sin(M_PI*cam["phi"]/180.0);
 	cam["cam_z"]	= cam["radius"]*cos(M_PI*cam["phi"]/180.0);
 	cam["upwards"]	= 2*(cam["phi"]>180)-1;
-	float cam_vel = (key["fast_cam"]*(cfg["camera"]["cam_v_boost"].as<float>()-1)+1)*cam["radius"]*cam["cam_v"];
+	float cam_vel = ((mod == cfg["hotkeys"]["fast_cam"].as<int>())*(cfg["camera"]["cam_v_boost"].as<float>()-1)+1)*cam["radius"]*cam["cam_v"];
 	if(key["mov_left"]){
 		cam["ctr_x"] -= cam_vel*cos(M_PI*cam["theta"]/180.0);
 		cam["ctr_y"] += cam_vel*sin(M_PI*cam["theta"]/180.0);
@@ -302,32 +359,33 @@ void update(int n){
 		cam["ctr_z"] += cam_vel;
 }
 
-void keyModifiers(unsigned char k, int mod){
-	if(mod == cfg["hotkeys"]["fast_cam"].as<int>())
-		key["fast_cam"] = true;
-	else
-		key["fast_cam"] = false;
-}
-
 bool checkKey(unsigned char k, char* key){
 	std::vector<char> vi = cfg["hotkeys"][key].as<std::vector<char>>();
 	return std::find(vi.begin(),vi.end(),k) != vi.end();
 }
  
 void keyPressed(unsigned char k, int x, int y){
-	if(k == cfg["hotkeys"]["exit"].as<int>())
+	if(k == cfg["hotkeys"]["exit"].as<int>()){
+		if(cfg["camera"]["store_cloud"].as<bool>())
+			pc.write();
 		exit(0);
+	}
 	else if(checkKey(k,"plot_axis"))
 		view["plot_axis"] = !view["plot_axis"];
 	else if(checkKey(k,"reset_view_pos")){
+		cam["ctr_x"] = 0.0;
+		cam["ctr_y"] = 0.0;
+		cam["ctr_z"] = 0.0;
+	}
+	else if(checkKey(k,"center_view")){
 		cam["ctr_x"] = pc.ctroid.x;
 		cam["ctr_y"] = pc.ctroid.y;
 		cam["ctr_z"] = pc.ctroid.z;
 	}
 	else if(checkKey(k,"render_p")){
 		view["viz_mode"]++;
-		if(view["viz_mode"] >= cfg["viz"]["viz_modes"].size())
-			view["viz_mode"] = cfg["viz"]["viz_modes"].size()-1;
+		if(view["viz_mode"] > 3)
+			view["viz_mode"] = 3;
 	}
 	else if(checkKey(k,"render_m")){
 		view["viz_mode"]--;
@@ -357,7 +415,7 @@ void keyPressed(unsigned char k, int x, int y){
 		key["mov_down"] = true;
 	else if(checkKey(k,"mov_up"))
 		key["mov_up"] = true;
-	keyModifiers(k,glutGetModifiers());
+	mod = glutGetModifiers();
 }
 
 void keyReleased(unsigned char k, int x, int y){
@@ -377,6 +435,6 @@ void keyReleased(unsigned char k, int x, int y){
 		key["mov_down"] = false;
 	else if(checkKey(k,"mov_up"))
 		key["mov_up"] = false;
-	keyModifiers(k,glutGetModifiers());
+	mod = glutGetModifiers();
 }
 

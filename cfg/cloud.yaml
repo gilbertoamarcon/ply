@@ -1,1 +1,3 @@
-cloud_filename: 'data/cld.csv'
+# cloud_filename: 'data/cld.csv'
+# cloud_filename: '/home/gil/Downloads/scene.csv'
+cloud_filename: '/home/gil/Downloads/scene-s.csv'
