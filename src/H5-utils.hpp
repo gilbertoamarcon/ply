@@ -1,6 +1,8 @@
 #ifndef __H5_UTILS_HPP__
 #define __H5_UTILS_HPP__
 #include <string>
+#include <utility>
+#include <vector>
 #include <map>
 #include "H5Cpp.h"
 
@@ -11,29 +13,24 @@
 
 typedef struct Node{
 	std::string addr;
-	std::string name;
-	int type;
-	double *data;
-	long int size;
-	H5::DataType data_type;
+	std::vector<double> data;
 	std::map<std::string,Node*> children;
 	Node(){
-		this->addr = "";
-		this->name = "";
-		this->type = H5G_GROUP;
-		this->data = NULL;
-		this->size = 0;
+		this->addr = "/";
 	}
 };
 
 
 class H5utils{
 	private:
-		static herr_t objs_list(hid_t loc_id, const char *name, void *opdata);
-		static void iterate(H5::H5File *file, Node *node);
+		Node *node;
+		static herr_t load_datasets(hid_t loc_id, const char *name, void *opdata);
 	public:
-		Node node;
 		H5utils(char *filename);
+		std::vector<double>& get(std::string type, std::string name, std::string variable);
+		std::vector<std::string> get(std::string type, std::string name);
+		std::vector<std::string> get(std::string type);
+		std::vector<std::string> get();
 };
 
 #endif

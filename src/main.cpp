@@ -40,18 +40,22 @@ void heatMap(float input,float* r,float* g,float* b);
 
 int main(int argc, char **argv){
 
-	H5utils h5utils("/home/gil/sea/all.h5");
+	H5utils h5("/home/gil/sea/all.h5");
 
+	cout << h5.get("ship","met","latitude").size() << endl;
+	cout << h5.get("ship","met","latitude")[0] << endl;
 
-	cout << endl;
-	cout << h5utils.node.children["ship"]->addr << endl;
-	cout << h5utils.node.children["ship"]->children["met"]->addr << endl;
-	cout << h5utils.node.children["ship"]->children["met"]->children["latitude"]->name << endl;
-	cout << h5utils.node.children["ship"]->children["met"]->children["latitude"]->addr << endl;
-	cout << h5utils.node.children["ship"]->children["met"]->children["latitude"]->size << endl;
-	cout << h5utils.node.children["ship"]->children["met"]->children["latitude"]->data[0] << endl;
-	for(long int i = 0; i < h5utils.node.children["ship"]->children["met"]->children["latitude"]->size; i++)
-		cout << h5utils.node.children["ship"]->children["met"]->children["latitude"]->data[i] << endl;
+	cout << h5.get("ship","met").size() << endl;
+	for(auto name:h5.get("ship","met"))
+		cout << name << ": " << h5.get("ship","met",name).size() << endl;
+
+	cout << h5.get("glider").size() << endl;
+	for(auto name:h5.get("glider"))
+		cout << name << ": " << h5.get("glider",name).size() << endl;
+
+	cout << h5.get().size() << endl;
+	for(auto name:h5.get())
+		cout << name << ": " << h5.get(name).size() << endl;
 
 	exit(0);
 
