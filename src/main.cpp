@@ -1,8 +1,16 @@
 #include "pointCloud.hpp"
-#define CFG_PATH "cfg/cfg.yaml"
 #include <algorithm>
+#include <string>
+#include <utility>
+#include <sstream>
+#include <map>
+#include "H5Cpp.h"
+#define H5_BUILT_AS_DYNAMIC_LIB 1
+#define CFG_PATH "cfg/cfg.yaml"
 
+using namespace H5;
 using namespace std;
+
 
 PointCloud pc;
 YAML::Node cfg;
@@ -37,8 +45,79 @@ void plotSelector();
 
 void heatMap(float input,float* r,float* g,float* b);
 
+typedef struct Node{
+	string addr;
+	string name;
+	int type;
+	double *data;
+	long int size;
+	DataType data_type;
+	std::map<string,Node*> children;
+	Node(){
+		this->addr = "";
+		this->name = "";
+		this->type = H5G_GROUP;
+		this->data = NULL;
+		this->size = 0;
+	}
+} Node;
+
+// H5G_LINK    0  Object is a symbolic link.  
+// H5G_GROUP   1  Object is a group.  
+// H5G_DATASET 2  Object is a dataset.  
+// H5G_TYPE    3  Object is a named datatype.  
+herr_t objs_list(hid_t loc_id, const char *name, void *opdata){
+	std::map<string,Node*> *children=(std::map<string,Node*> *)opdata;
+	Node *node = new Node();
+	node->name = name;
+	node->type = H5Gget_objtype_by_idx(loc_id,0);
+	(*children)[string(name)] = node;
+	return 0;
+}
+
+void ite(H5File *file, Node *node){
+	if(node->type == H5G_GROUP){
+		node->addr+="/";
+		file->iterateElems(node->addr, NULL, objs_list, &(node->children));
+		for(auto child:node->children){
+			child.second->addr = node->addr+child.first;
+			ite(file, child.second);
+		}
+	}	
+	if(node->type == H5G_DATASET){
+		cout << node->addr << endl;
+		DataSet dataset = file->openDataSet(node->addr);
+		DataSpace dataspace = dataset.getSpace();
+		int rank = dataspace.getSimpleExtentNdims();
+		hsize_t *dims_out = new hsize_t[rank];
+		dataspace.getSimpleExtentDims(dims_out, NULL);
+		node->size = dims_out[0];
+		node->data = new double[node->size+1];
+		node->data_type = dataset.getDataType();
+		dataset.read((void*)(node->data), node->data_type);
+		dataset.close();
+	}
+}
 
 int main(int argc, char **argv){
+
+	H5File *file = new H5File("/home/gil/sea/all.h5", H5F_ACC_RDONLY);
+
+	Node node;
+	ite(file,&node);
+	file->close();
+
+	cout << endl;
+	cout << node.children["ship"]->addr << endl;
+	cout << node.children["ship"]->children["met"]->addr << endl;
+	cout << node.children["ship"]->children["met"]->children["latitude"]->name << endl;
+	cout << node.children["ship"]->children["met"]->children["latitude"]->addr << endl;
+	cout << node.children["ship"]->children["met"]->children["latitude"]->size << endl;
+	cout << node.children["ship"]->children["met"]->children["latitude"]->data[0] << endl;
+	for(long int i = 0; i < node.children["ship"]->children["met"]->children["latitude"]->size; i++)
+		cout << node.children["ship"]->children["met"]->children["latitude"]->data[i] << endl;
+
+	exit(0);
 
 	mod = 0;
 
